@@ -65,7 +65,7 @@ def get_train_loader(args, dataset, height, width, batch_size, workers,
     train_loader = IterLoader(
         DataLoader(Preprocessor(train_set, root=dataset.images_dir, nv_root=dataset.images_dir, transform=train_transformer),
                    batch_size=batch_size, num_workers=workers, sampler=sampler,
-                   shuffle=not rmgs_flag, pin_memory=True, drop_last=True), length=iters)
+                   shuffle=not rmgs_flag, pin_memory=True, drop_last=True), length=iters)  # shuffle=not rmgs_flag
     return train_loader
 
 
@@ -154,23 +154,35 @@ def main_worker(args):
 
     # Trainer
     trainer = Trainer(model)
+    print('==> Initialize features memory')
+    feature_memory = ClusterMemory(model.module.num_features, len(dataset.train), temp=args.temp,
+                                   momentum=args.momentum, use_hard=args.use_hard).cuda()
+    cluster_loader = get_test_loader(args, dataset, args.height, args.width,
+                                     args.batch_size, args.workers, testset=sorted(dataset.train))
 
+    # create index corresponding dic
+    index_dic = {}
+    for it, data in enumerate(cluster_loader):
+        _, path_list, _, _, indexes = data
+        for m in range(len(path_list)):
+            file_path = path_list[m]
+            file_name = file_path.split('/')[-1]
+            index_dic[file_name] = indexes[m]
+
+    features, _ = extract_features(model, cluster_loader, print_freq=50)
+    features = torch.cat([features[f].unsqueeze(0) for f, _, _ in sorted(dataset.train)], 0)
+    feature_memory.features = F.normalize(features, dim=1).cuda()
+    trainer.feature_memory = feature_memory
+    del cluster_loader
     # DBSCAN cluster init
     eps = args.eps
     print('Clustering criterion: eps: {:.3f}'.format(eps))
     cluster = DBSCAN(eps=eps, min_samples=4, metric='precomputed', n_jobs=-1)
-    # pseudo_list_all = np.zeros((args.epochs, 12936))
     for epoch in range(args.epochs):
         with torch.no_grad():
             print('==> Create pseudo labels for unlabeled data')
-            cluster_loader = get_test_loader(args, dataset, args.height, args.width,
-                                             args.batch_size, args.workers, testset=sorted(dataset.train))
-            features, _ = extract_features(model, cluster_loader, print_freq=50)
-            #print(features.shape)
-            features = torch.cat([features[f].unsqueeze(0) for f, _, _ in sorted(dataset.train)], 0)
-            #print(features.shape)
+            features = feature_memory.features.clone()
             rerank_dist = compute_jaccard_distance(features, k1=args.k1, k2=args.k2)
-
             # select & cluster images as training set of this epochs
             pseudo_labels = cluster.fit_predict(rerank_dist)
             # pseudo_list_all[epoch, :] = pseudo_labels
@@ -195,9 +207,9 @@ def main_worker(args):
             return centers
 
         cluster_features = generate_cluster_features(pseudo_labels, features)
-        del cluster_loader, features
+        del features
 
-        # Create hybrid memory
+        # Create ClusterMemory
         memory = ClusterMemory(model.module.num_features, num_cluster, temp=args.temp,
                                momentum=args.momentum, use_hard=args.use_hard).cuda()
         memory.features = F.normalize(cluster_features, dim=1).cuda()
@@ -217,7 +229,7 @@ def main_worker(args):
 
         train_loader.new_epoch()
 
-        trainer.train(epoch, train_loader, optimizer,
+        trainer.train(epoch, train_loader, optimizer, index_dic = index_dic,
                       print_freq=args.print_freq, train_iters=len(train_loader))
 
         if (epoch + 1) % args.eval_step == 0 or (epoch == args.epochs - 1):
@@ -253,7 +265,7 @@ def main_worker(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="contrastive learning on unsupervised re-ID")
     # data
-    parser.add_argument('-d', '--dataset', type=str, default='msmt17',  # market1501, msmt17_v2, msmt17
+    parser.add_argument('-d', '--dataset', type=str, default='market1501',  # market1501, msmt17_v2, msmt17
                         choices=datasets.names())
     parser.add_argument('-b', '--batch-size', type=int, default=512)
     parser.add_argument('--epochs', type=int, default=100)
