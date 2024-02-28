@@ -5,8 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="57df7ce3-a2eb-4239-9f5d-1574cda4fc55" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/train/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/my/trainers.py" beforeDir="false" afterPath="$PROJECT_DIR$/train/my/trainers.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -100,7 +100,7 @@
       <updated>1706770255198</updated>
       <workItem from="1706770256367" duration="8960000" />
       <workItem from="1706864132912" duration="363000" />
-      <workItem from="1708678828503" duration="36592000" />
+      <workItem from="1708678828503" duration="41848000" />
     </task>
     <servers />
   </component>
@@ -120,6 +120,6 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/main_code$main.coverage" NAME="main Coverage Results" MODIFIED="1706771202763" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train/examples" />
-    <SUITE FILE_PATH="coverage/main_code$main__1_.coverage" NAME="main (1) Coverage Results" MODIFIED="1709102064731" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
+    <SUITE FILE_PATH="coverage/main_code$main__1_.coverage" NAME="main (1) Coverage Results" MODIFIED="1709109875017" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/train" />
   </component>
 </project>
