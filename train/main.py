@@ -123,7 +123,7 @@ def main():
 def main_worker(args):
     global start_epoch, best_mAP
     start_time = time.monotonic()
-    os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6,7"
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     cudnn.benchmark = True
 
     sys.stdout = Logger(osp.join(args.logs_dir, 'log.txt'))
@@ -166,17 +166,11 @@ def main_worker(args):
             cluster_loader = get_test_loader(args, dataset, args.height, args.width,
                                              args.batch_size, args.workers, testset=sorted(dataset.train))
             features, _ = extract_features(model, cluster_loader, print_freq=50)
-            #print(features.shape)
             features = torch.cat([features[f].unsqueeze(0) for f, _, _ in sorted(dataset.train)], 0)
-            #print(features.shape)
             rerank_dist = compute_jaccard_distance(features, k1=args.k1, k2=args.k2)
-
             # select & cluster images as training set of this epochs
             pseudo_labels = cluster.fit_predict(rerank_dist)
-            # pseudo_list_all[epoch, :] = pseudo_labels
             num_cluster = len(set(pseudo_labels)) - (1 if -1 in pseudo_labels else 0)
-            print('num_cluster', num_cluster)
-            # print("epoch: {} \n pseudo_labels: {}".format(epoch, pseudo_labels.tolist()[:100]))
 
         # generate new dataset and calculate cluster centers
         @torch.no_grad()
@@ -216,7 +210,6 @@ def main_worker(args):
                                         trainset=pseudo_labeled_dataset)
 
         train_loader.new_epoch()
-
         trainer.train(epoch, train_loader, optimizer,
                       print_freq=args.print_freq, train_iters=len(train_loader))
 
@@ -234,12 +227,6 @@ def main_worker(args):
                   format(epoch, mAP, best_mAP, ' *' if is_best else ''))
 
         lr_scheduler.step()
-        print()
-
-    # df = pd.DataFrame(pseudo_list_all)
-    # # Save the DataFrame to an Excel file
-    # excel_filename = 'pseudo_list_all_MSMT.xlsx'
-    # df.to_excel(excel_filename, index=False)
 
     print('==> Test with the best model:')
     checkpoint = load_checkpoint(osp.join(args.logs_dir, 'model_best.pth.tar'))
@@ -255,6 +242,7 @@ if __name__ == '__main__':
     # data
     parser.add_argument('-d', '--dataset', type=str, default='msmt17',  # market1501, msmt17_v2, msmt17
                         choices=datasets.names())
+    parser.add_argument('--gpu', type=str, default='4,5,6,7')
     parser.add_argument('-b', '--batch-size', type=int, default=512)
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('-j', '--workers', type=int, default=4)

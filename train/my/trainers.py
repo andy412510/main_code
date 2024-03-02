@@ -17,7 +17,6 @@ class Trainer(object):
         data_time = AverageMeter()
 
         losses = AverageMeter()
-
         end = time.time()
         for i in range(train_iters):
             # load data
