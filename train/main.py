@@ -247,12 +247,6 @@ def main_worker(args):
                   format(epoch, mAP, best_mAP, ' *' if is_best else ''))
 
         lr_scheduler.step()
-        print()
-
-    # df = pd.DataFrame(pseudo_list_all)
-    # # Save the DataFrame to an Excel file
-    # excel_filename = 'pseudo_list_all_MSMT.xlsx'
-    # df.to_excel(excel_filename, index=False)
 
     print('==> Test with the best model:')
     checkpoint = load_checkpoint(osp.join(args.logs_dir, 'model_best.pth.tar'))
@@ -266,7 +260,7 @@ def main_worker(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="contrastive learning on unsupervised re-ID")
     # data
-    parser.add_argument('-d', '--dataset', type=str, default='msmt17',  # market1501, msmt17_v2, msmt17
+    parser.add_argument('-d', '--dataset', type=str, default='market1501',  # market1501, msmt17_v2, msmt17
                         choices=datasets.names())
     parser.add_argument('--gpu', type=str, default='4,5,6,7')
     parser.add_argument('-b', '--batch-size', type=int, default=512)
