@@ -180,6 +180,7 @@ def main_worker(args):
                 if label == -1:
                     continue
                 centers[labels[i]].append(features[i])
+                print()
 
             centers = [
                 torch.stack(centers[idx], dim=0).mean(0) for idx in sorted(centers.keys())
@@ -188,7 +189,7 @@ def main_worker(args):
             centers = torch.stack(centers, dim=0)
             return centers
 
-        cluster_features = generate_cluster_features(pseudo_labels, features)
+        cluster_features = generate_cluster_features(pseudo_labels, features)  # prototypes
         del cluster_loader, features
 
         # Create hybrid memory
@@ -240,7 +241,7 @@ def main_worker(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="contrastive learning on unsupervised re-ID")
     # data
-    parser.add_argument('-d', '--dataset', type=str, default='msmt17',  # market1501, msmt17_v2, msmt17
+    parser.add_argument('-d', '--dataset', type=str, default='market1501',  # market1501, msmt17_v2, msmt17
                         choices=datasets.names())
     parser.add_argument('--gpu', type=str, default='4,5,6,7')
     parser.add_argument('-b', '--batch-size', type=int, default=512)
