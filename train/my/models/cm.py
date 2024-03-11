@@ -13,7 +13,7 @@ class CM_Hard(autograd.Function):
         ctx.features = features  # prototype
         ctx.momentum = momentum
         ctx.save_for_backward(inputs, targets)  # batch data, label
-        outputs = inputs.mm(ctx.features.t())
+        outputs = inputs.mm(ctx.features.t())  # [batch, cluster_num]
 
         # debug for backward
         grad_inputs = outputs.mm(ctx.features)
@@ -35,7 +35,7 @@ class CM_Hard(autograd.Function):
         inputs, targets = ctx.saved_tensors
         grad_inputs = None
         if ctx.needs_input_grad[0]:  # True
-            grad_inputs = grad_outputs.mm(ctx.features)
+            grad_inputs = grad_outputs.mm(ctx.features)  # compute gradient
 
         batch_centers = collections.defaultdict(list)
         for instance_feature, index in zip(inputs, targets.tolist()):
@@ -78,4 +78,5 @@ class ClusterMemory(nn.Module, ABC):
 
         outputs /= self.temp
         loss = F.cross_entropy(outputs, targets)
+
         return loss
