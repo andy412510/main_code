@@ -174,7 +174,6 @@ def main_worker(args):
     features = torch.cat([features[f].unsqueeze(0) for f, _, _ in sorted(dataset.train)], 0)
     feature_memory.features = F.normalize(features, dim=1).cuda()
     trainer.feature_memory = feature_memory
-    del cluster_loader
     # DBSCAN cluster init
     eps = args.eps
     print('Clustering criterion: eps: {:.3f}'.format(eps))
@@ -182,14 +181,13 @@ def main_worker(args):
     for epoch in range(args.epochs):
         with torch.no_grad():
             print('==> Create pseudo labels for unlabeled data')
-            features = feature_memory.features.clone()
+            features, _ = extract_features(model, cluster_loader, print_freq=50)
+            features = torch.cat([features[f].unsqueeze(0) for f, _, _ in sorted(dataset.train)], 0)
             rerank_dist = compute_jaccard_distance(features, k1=args.k1, k2=args.k2)
             # select & cluster images as training set of this epochs
-            pseudo_labels = cluster.fit_predict(rerank_dist)
-            # pseudo_list_all[epoch, :] = pseudo_labels
+            pseudo_labels = torch.Tensor(cluster.fit_predict(rerank_dist))
+            feature_memory.labels = pseudo_labels.cuda()
             num_cluster = len(set(pseudo_labels)) - (1 if -1 in pseudo_labels else 0)
-            print('num_cluster', num_cluster)
-            # print("epoch: {} \n pseudo_labels: {}".format(epoch, pseudo_labels.tolist()[:100]))
 
         # generate new dataset and calculate cluster centers
         @torch.no_grad()
@@ -230,7 +228,7 @@ def main_worker(args):
 
         train_loader.new_epoch()
 
-        trainer.train(epoch, train_loader, optimizer, index_dic = index_dic,
+        trainer.train(epoch, train_loader, optimizer, args.K, index_dic=index_dic,
                       print_freq=args.print_freq, train_iters=len(train_loader))
 
         if (epoch + 1) % args.eval_step == 0 or (epoch == args.epochs - 1):
@@ -266,6 +264,7 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--batch-size', type=int, default=512)
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('-j', '--workers', type=int, default=4)
+    parser.add_argument('-K', type=int, default=1000, help="negative samples number for instance memory")
     parser.add_argument('--height', type=int, default=256, help="input height")
     parser.add_argument('--width', type=int, default=128, help="input width")
     parser.add_argument('--num-instances', type=int, default=8,
@@ -273,7 +272,7 @@ if __name__ == '__main__':
                              "(batch_size // num_instances) identities, and "
                              "each i dentity has num_instances instances, "
                              "default: 0 (NOT USE)")
-    # cluster
+    # DBSCAN
     parser.add_argument('--eps', type=float, default=0.7,
                         help="max neighbor distance for DBSCAN")
     parser.add_argument('--eps-gap', type=float, default=0.02,

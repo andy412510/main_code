@@ -20,7 +20,6 @@ class CM_Hard(autograd.Function):
         batch_centers = collections.defaultdict(list)
         for instance_feature, index in zip(inputs, targets.tolist()):
             batch_centers[index].append(instance_feature)
-            print()
         for index, features in batch_centers.items():
             distances = []
             for feature in features:
@@ -59,6 +58,27 @@ def cm_hard(inputs, indexes, features, momentum=0.5):
     return CM_Hard.apply(inputs, indexes, features, torch.Tensor([momentum]).to(inputs.device))
 
 
+def anchor(batch_input, batch_labels, feature_memory, k, temp):
+    instance_m = feature_memory.features.clone().detach()
+    mat = torch.matmul(batch_input, instance_m.transpose(0, 1))
+    positives = []
+    negatives = []
+    for i in range(batch_labels.size(0)):
+        pos_labels = (feature_memory.labels == batch_labels[i])
+        pos = mat[i, pos_labels]
+        positives.append(pos[torch.argmin(pos)])
+        neg_labels = (feature_memory.labels != batch_labels[i])
+        neg = torch.sort(mat[i, neg_labels], descending=True)[0]
+        idx = neg[:k]
+        negatives.append(idx)
+    positives = torch.stack(positives)
+    positives = positives.view(-1,1)
+    negatives = torch.stack(negatives)
+    anchor_out = torch.cat((positives, negatives), dim=1) / temp
+
+    return anchor_out
+
+
 class ClusterMemory(nn.Module, ABC):
     def __init__(self, num_features, num_samples, temp=0.05, momentum=0.2, use_hard=False):
         super(ClusterMemory, self).__init__()
@@ -68,15 +88,20 @@ class ClusterMemory(nn.Module, ABC):
         self.momentum = momentum
         self.temp = temp
         self.use_hard = use_hard
-
+        self.criterion = nn.CrossEntropyLoss()
         self.register_buffer('features', torch.zeros(num_samples, num_features))
+        self.register_buffer('labels', torch.zeros(num_samples).long())
 
-    def forward(self, inputs, targets):
+    def forward(self, inputs, targets, feature_memory, k):
+        inputs = F.normalize(inputs, dim=1).cuda()  # batch data
+        targets = torch.zeros([targets.size(0)]).cuda().long()
+        anchor_out = anchor(inputs, targets, feature_memory, k, self.temp)
+        anchor_loss = self.criterion(anchor_out, targets)
 
-        inputs = F.normalize(inputs, dim=1).cuda()
         if self.use_hard:
             outputs = cm_hard(inputs, targets, self.features, self.momentum)
 
         outputs /= self.temp
         loss = F.cross_entropy(outputs, targets)
-        return loss
+
+        return loss+anchor_loss
