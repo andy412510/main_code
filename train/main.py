@@ -258,7 +258,7 @@ def main_worker(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="contrastive learning on unsupervised re-ID")
     # data
-    parser.add_argument('-d', '--dataset', type=str, default='market1501',  # market1501, msmt17_v2, msmt17
+    parser.add_argument('-d', '--dataset', type=str, default='market1501',  # msmt17, msmt17_v2, msmt17
                         choices=datasets.names())
     parser.add_argument('--gpu', type=str, default='4,5,6,7')
     parser.add_argument('-b', '--batch-size', type=int, default=512)

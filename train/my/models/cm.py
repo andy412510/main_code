@@ -15,18 +15,18 @@ class CM_Hard(autograd.Function):
         ctx.save_for_backward(inputs, targets)
         outputs = inputs.mm(ctx.features.t())  # Similarity between batch feature and prototype
 
-        # debug for backward
-        grad_inputs = outputs.mm(ctx.features)
-        batch_centers = collections.defaultdict(list)
-        for instance_feature, index in zip(inputs, targets.tolist()):
-            batch_centers[index].append(instance_feature)
-        for index, features in batch_centers.items():
-            distances = []
-            for feature in features:
-                distance = feature.unsqueeze(0).mm(ctx.features[index].unsqueeze(0).t())[0][0]
-                distances.append(distance.cpu().numpy())
-
-            median = np.argmin(np.array(distances))
+        # # debug for backward
+        # grad_inputs = outputs.mm(ctx.features)
+        # batch_centers = collections.defaultdict(list)
+        # for instance_feature, index in zip(inputs, targets.tolist()):
+        #     batch_centers[index].append(instance_feature)
+        # for index, features in batch_centers.items():
+        #     distances = []
+        #     for feature in features:
+        #         distance = feature.unsqueeze(0).mm(ctx.features[index].unsqueeze(0).t())[0][0]
+        #         distances.append(distance.cpu().numpy())
+        #
+        #     median = np.argmin(np.array(distances))
 
         return outputs
 
@@ -94,9 +94,9 @@ class ClusterMemory(nn.Module, ABC):
 
     def forward(self, inputs, targets, feature_memory, k):
         inputs = F.normalize(inputs, dim=1).cuda()  # batch data
-        targets = torch.zeros([targets.size(0)]).cuda().long()
+        contrast_targets = torch.zeros([targets.size(0)]).cuda().long()
         anchor_out = anchor(inputs, targets, feature_memory, k, self.temp)
-        anchor_loss = self.criterion(anchor_out, targets)
+        anchor_loss = self.criterion(anchor_out, contrast_targets)
 
         if self.use_hard:
             outputs = cm_hard(inputs, targets, self.features, self.momentum)
