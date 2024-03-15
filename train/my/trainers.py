@@ -34,6 +34,7 @@ class Trainer(object):
                 indexes[j] = index_dic[file_name]
             # forward
             f_out = self._forward(inputs)
+            # anchor_loss = self.feature_memory(f_out, indexes)
             loss = self.memory(f_out, labels, self.feature_memory, k)
 
             optimizer.zero_grad()

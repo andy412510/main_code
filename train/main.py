@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
 from my import datasets, models
-from my.models.cm import ClusterMemory
+from my.models.cm import ClusterMemory, HybridMemory
 from my.trainers import Trainer
 from my.evaluators import Evaluator, extract_features
 from my.utils.data import IterLoader
@@ -156,8 +156,8 @@ def main_worker(args):
     # Trainer
     trainer = Trainer(model)
     print('==> Initialize features memory')
-    feature_memory = ClusterMemory(model.module.num_features, len(dataset.train), temp=args.temp,
-                                   momentum=args.momentum, use_hard=args.use_hard).cuda()
+    feature_memory = HybridMemory(model.module.num_features, len(dataset.train), temp=args.temp,
+                                   momentum=args.momentum).cuda()
     cluster_loader = get_test_loader(args, dataset, args.height, args.width,
                                      args.batch_size, args.workers, testset=sorted(dataset.train))
 
@@ -289,7 +289,7 @@ if __name__ == '__main__':
     parser.add_argument('--features', type=int, default=0)
     parser.add_argument('--dropout', type=float, default=0)
     parser.add_argument('--momentum', type=float, default=0.2,
-                        help="update momentum for the hybrid memory")
+                        help="update momentum for the memory")
     #vit
     parser.add_argument('--drop-path-rate', type=float, default=0.3)
     parser.add_argument('--hw-ratio', type=int, default=2)
