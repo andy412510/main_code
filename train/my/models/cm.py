@@ -58,7 +58,7 @@ def cm_hard(inputs, indexes, features, momentum=0.5):
     return CM_Hard.apply(inputs, indexes, features, torch.Tensor([momentum]).to(inputs.device))
 
 
-def anchor(batch_input, batch_labels, feature_memory, k, temp):
+def anchor(batch_input, batch_labels, indexes, feature_memory, k, temp, momentum):
     instance_m = feature_memory.features.clone().detach()
     mat = torch.matmul(batch_input, instance_m.transpose(0, 1))
     positives = []
@@ -75,7 +75,9 @@ def anchor(batch_input, batch_labels, feature_memory, k, temp):
     positives = positives.view(-1,1)
     negatives = torch.stack(negatives)
     anchor_out = torch.cat((positives, negatives), dim=1) / temp
-
+    for data, index in zip(batch_input, indexes):
+        feature_memory.features[index] = momentum * feature_memory.features[index] + (1.-momentum) * data
+        feature_memory.features[index] /= feature_memory.features[index].norm()
     return anchor_out
 
 
@@ -91,10 +93,10 @@ class ClusterMemory(nn.Module, ABC):
         self.criterion = nn.CrossEntropyLoss()
         self.register_buffer('features', torch.zeros(num_samples, num_features))
 
-    def forward(self, inputs, targets, feature_memory, k):
+    def forward(self, inputs, targets, indexes, feature_memory, k):
         inputs = F.normalize(inputs, dim=1).cuda()  # batch data
         contrast_targets = torch.zeros([targets.size(0)]).cuda().long()
-        anchor_out = anchor(inputs, targets, feature_memory, k, self.temp)
+        anchor_out = anchor(inputs, targets, indexes, feature_memory, k, self.temp, self.momentum)
         anchor_loss = self.criterion(anchor_out, contrast_targets)
 
         if self.use_hard:
