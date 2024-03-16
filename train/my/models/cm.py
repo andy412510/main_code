@@ -93,14 +93,14 @@ class ClusterMemory(nn.Module, ABC):
 
     def forward(self, inputs, targets, feature_memory, k):
         inputs = F.normalize(inputs, dim=1).cuda()  # batch data
-        # contrast_targets = torch.zeros([targets.size(0)]).cuda().long()
-        # anchor_out = anchor(inputs, targets, feature_memory, k, self.temp)
-        # anchor_loss = self.criterion(anchor_out, contrast_targets)
+        contrast_targets = torch.zeros([targets.size(0)]).cuda().long()
+        anchor_out = anchor(inputs, targets, feature_memory, k, self.temp)
+        anchor_loss = self.criterion(anchor_out, contrast_targets)
 
         if self.use_hard:
             outputs = cm_hard(inputs, targets, self.features, self.momentum)
 
         outputs /= self.temp
         loss = F.cross_entropy(outputs, targets)
-
+        # return loss
         return loss+anchor_loss

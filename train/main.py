@@ -185,8 +185,8 @@ def main_worker(args):
             features = torch.cat([features[f].unsqueeze(0) for f, _, _ in sorted(dataset.train)], 0)
             rerank_dist = compute_jaccard_distance(features, k1=args.k1, k2=args.k2)
             # select & cluster images as training set of this epochs
-            pseudo_labels = torch.Tensor(cluster.fit_predict(rerank_dist))
-            feature_memory.labels = pseudo_labels.cuda()
+            pseudo_labels = cluster.fit_predict(rerank_dist)
+            feature_memory.labels = torch.Tensor(pseudo_labels).cuda()
             num_cluster = len(set(pseudo_labels)) - (1 if -1 in pseudo_labels else 0)
 
         # generate new dataset and calculate cluster centers
