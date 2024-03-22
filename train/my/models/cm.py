@@ -67,7 +67,8 @@ def anchor(batch_input, batch_labels, indexes, feature_memory, k, temp, momentum
         pos_labels = (feature_memory.labels == batch_labels[i])
         pos = mat[i, pos_labels]
         positives.append(pos[torch.argmin(pos)])
-        neg_labels = (feature_memory.labels != batch_labels[i])
+        neg_labels = (feature_memory.labels != batch_labels[i])  # 不忽略-1
+        # neg_labels = torch.logical_and(feature_memory.labels != batch_labels[i], feature_memory.labels != -1)  # 忽略-1
         neg = torch.sort(mat[i, neg_labels], descending=True)[0]
         idx = neg[:k]
         negatives.append(idx)
@@ -75,9 +76,10 @@ def anchor(batch_input, batch_labels, indexes, feature_memory, k, temp, momentum
     positives = positives.view(-1,1)
     negatives = torch.stack(negatives)
     anchor_out = torch.cat((positives, negatives), dim=1) / temp
-    for data, index in zip(batch_input, indexes):
-        feature_memory.features[index] = momentum * feature_memory.features[index] + (1.-momentum) * data
-        feature_memory.features[index] /= feature_memory.features[index].norm()
+    with torch.no_grad():
+        for data, index in zip(batch_input, indexes):
+            feature_memory.features[index] = momentum * feature_memory.features[index] + (1.-momentum) * data
+            feature_memory.features[index] /= feature_memory.features[index].norm()
     return anchor_out
 
 

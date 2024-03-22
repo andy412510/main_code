@@ -264,7 +264,7 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--batch-size', type=int, default=512)
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('-j', '--workers', type=int, default=4)
-    parser.add_argument('-K', type=int, default=1000, help="negative samples number for instance memory")
+    parser.add_argument('-K', type=int, default=64, help="negative samples number for instance memory")
     parser.add_argument('--height', type=int, default=256, help="input height")
     parser.add_argument('--width', type=int, default=128, help="input width")
     parser.add_argument('--num-instances', type=int, default=8,
@@ -289,7 +289,7 @@ if __name__ == '__main__':
     parser.add_argument('--features', type=int, default=0)
     parser.add_argument('--dropout', type=float, default=0)
     parser.add_argument('--momentum', type=float, default=0.2,
-                        help="update momentum for the hybrid memory")
+                        help="update momentum for the memory")
     #vit
     parser.add_argument('--drop-path-rate', type=float, default=0.3)
     parser.add_argument('--hw-ratio', type=int, default=2)
